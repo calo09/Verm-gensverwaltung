@@ -8,13 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  name         String?
-  baseCurrency String     @default("EUR")
-  createdAt    DateTime   @default(now())
-  assets       Asset[]
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  name           String?
+  baseCurrency   String          @default("EUR")
+  createdAt      DateTime        @default(now())
+  assets         Asset[]
+  importProfiles ImportProfile[]
+  imports        Import[]
 }
 
 enum AssetType {
@@ -35,7 +37,7 @@ model Asset {
   type        AssetType
   institution String?
   currency    String      @default("EUR")
-  identifier  String?     // ISIN, Ticker, IBAN-Ende ...
+  identifier  String? // ISIN, Ticker, IBAN-Ende ...
   note        String?
   archived    Boolean     @default(false)
   createdAt   DateTime    @default(now())
@@ -64,4 +66,34 @@ model Valuation {
 
   @@unique([assetId, date])
   @@index([assetId, date])
+}
+
+/// Selbst angelegte Vorlage, wie die CSV-Datei einer Bank oder eines Brokers gelesen wird.
+model ImportProfile {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  institution String?
+  /// Einstellungen und Spaltenzuordnung, Aufbau siehe lib/csvImport.ts (ImportConfig).
+  config      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  imports     Import[]
+
+  @@index([userId])
+}
+
+model Import {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId      String?
+  profile        ImportProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  fileName       String
+  rowCount       Int
+  valuationCount Int
+  createdAt      DateTime       @default(now())
+
+  @@index([userId])
 }

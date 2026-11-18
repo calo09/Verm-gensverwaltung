@@ -11,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="font-semibold">Vermögen</span>
           <Link href="/dashboard" className="text-muted hover:text-text">Übersicht</Link>
           <Link href="/positionen" className="text-muted hover:text-text">Positionen</Link>
+          <Link href="/import" className="text-muted hover:text-text">Import</Link>
         </nav>
         <div className="flex items-center gap-3 text-sm text-muted">
           <span className="hidden sm:inline">{user.email}</span>

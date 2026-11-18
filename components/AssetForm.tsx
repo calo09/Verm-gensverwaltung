@@ -19,9 +19,10 @@ type Props = {
   withValuation?: boolean;
   submitLabel: string;
   today: string;
+  institutions?: string[];
 };
 
-export function AssetForm({ action, initial, withValuation = false, submitLabel, today }: Props) {
+export function AssetForm({ action, initial, withValuation = false, submitLabel, today, institutions = [] }: Props) {
   const [state, formAction] = useActionState(action, undefined);
   return (
     <form action={formAction} className="space-y-4">
@@ -40,7 +41,10 @@ export function AssetForm({ action, initial, withValuation = false, submitLabel,
         </div>
         <div>
           <label className="label" htmlFor="institution">Bank / Broker / Ort</label>
-          <input className="input" id="institution" name="institution" defaultValue={initial?.institution ?? ""} placeholder="z. B. Sparkasse" />
+          <input className="input" id="institution" name="institution" defaultValue={initial?.institution ?? ""} placeholder="z. B. Sparkasse" list="asset-institutions" />
+          <datalist id="asset-institutions">
+            {institutions.map((i) => <option key={i} value={i} />)}
+          </datalist>
         </div>
         <div>
           <label className="label" htmlFor="identifier">Kennung (optional)</label>
