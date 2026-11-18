@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String?
+  baseCurrency String     @default("EUR")
+  createdAt    DateTime   @default(now())
+  assets       Asset[]
+}
+
+enum AssetType {
+  GIROKONTO
+  TAGESGELD
+  DEPOT
+  KRYPTO
+  IMMOBILIE
+  SONSTIGES
+  KREDIT
+}
+
+model Asset {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  type        AssetType
+  institution String?
+  currency    String      @default("EUR")
+  identifier  String?     // ISIN, Ticker, IBAN-Ende ...
+  note        String?
+  archived    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  valuations  Valuation[]
+
+  @@index([userId])
+}
+
+enum ValuationSource {
+  MANUAL
+  IMPORT
+  API
+}
+
+model Valuation {
+  id        String          @id @default(cuid())
+  assetId   String
+  asset     Asset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  date      DateTime        @db.Date
+  // Betrag immer positiv; ob es Vermögen oder Schuld ist, ergibt sich aus der Art der Position.
+  value     Decimal         @db.Decimal(18, 2)
+  quantity  Decimal?        @db.Decimal(28, 10)
+  price     Decimal?        @db.Decimal(28, 10)
+  source    ValuationSource @default(MANUAL)
+  createdAt DateTime        @default(now())
+
+  @@unique([assetId, date])
+  @@index([assetId, date])
+}

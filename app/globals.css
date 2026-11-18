@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --good: #059669;
+  --bad: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0f17;
+    --card: #131a26;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #273042;
+    --accent: #60a5fa;
+    --good: #34d399;
+    --bad: #f87171;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card {
+  @apply rounded-xl border border-border bg-card p-4 sm:p-5;
+}
+.input {
+  @apply w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent;
+}
+.label {
+  @apply mb-1 block text-sm font-medium;
+}
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-lg border border-border px-3 py-2 text-sm hover:bg-bg;
+}
