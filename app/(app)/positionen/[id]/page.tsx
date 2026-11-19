@@ -4,6 +4,7 @@ import { addValuation, deleteAsset, deleteValuation, updateAsset } from "@/app/a
 import { AssetForm } from "@/components/AssetForm";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NetWorthChart } from "@/components/NetWorthChart";
+import { PriceChart } from "@/components/PriceChart";
 import { RefreshPricesButton } from "@/components/RefreshPricesButton";
 import { ValuationForm } from "@/components/ValuationForm";
 import { ASSET_TYPE_LABELS, isLiability } from "@/lib/assetTypes";
@@ -59,6 +60,16 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
       </section>
 
       <NetWorthChart history={history} today={today} title="Wert im Verlauf" seriesLabel="Wert" />
+
+      {asset.identifier && (asset.type === "DEPOT" || asset.type === "KRYPTO") && (
+        <PriceChart
+          q={asset.identifier}
+          kind={asset.type === "KRYPTO" ? "crypto" : "security"}
+          symbol={asset.priceSymbol}
+          quantity={asset.quantity?.toNumber() ?? null}
+          height={340}
+        />
+      )}
 
       <section className="card">
         <h2 className="mb-2 font-semibold">Alle Werte</h2>
