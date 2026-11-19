@@ -30,18 +30,25 @@ enum AssetType {
 }
 
 model Asset {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  type        AssetType
-  institution String?
-  currency    String      @default("EUR")
-  identifier  String? // ISIN, Ticker, IBAN-Ende ...
-  note        String?
-  archived    Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  valuations  Valuation[]
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  type           AssetType
+  institution    String?
+  currency       String      @default("EUR")
+  identifier     String? // ISIN, Ticker, IBAN-Ende ...
+  note           String?
+  archived       Boolean     @default(false)
+  /// Stückzahl (Anteile, Coins). Mit autoPrice wird der Wert täglich als Stückzahl × Kurs berechnet.
+  quantity       Decimal?    @db.Decimal(28, 10)
+  autoPrice      Boolean     @default(false)
+  /// Beim Kursanbieter aufgelöstes Kürzel, z. B. "VWCE.DE" oder "coingecko:bitcoin".
+  priceSymbol    String?
+  priceError     String?
+  priceUpdatedAt DateTime?
+  createdAt      DateTime    @default(now())
+  valuations     Valuation[]
 
   @@index([userId])
 }

@@ -32,7 +32,7 @@ const DEFAULT: ImportConfig = {
   columns: {},
 };
 
-const COLUMN_KEYS = ["date", "amount", "name", "identifier"] as const;
+const COLUMN_KEYS = ["date", "amount", "name", "identifier", "quantity"] as const;
 
 export function ProfileEditor({ id, initial, institutions }: Props) {
   const router = useRouter();
@@ -192,7 +192,7 @@ export function ProfileEditor({ id, initial, institutions }: Props) {
       <section className="card space-y-4">
         <h2 className="font-semibold">3. Spalten zuordnen</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {COLUMN_KEYS.filter((k) => needed.includes(k) || (config.mode === "HOLDINGS" && k === "identifier")).map((k) => (
+          {COLUMN_KEYS.filter((k) => needed.includes(k) || (config.mode === "HOLDINGS" && (k === "identifier" || k === "quantity"))).map((k) => (
             <div key={k}>
               <label className="label" htmlFor={`col-${k}`}>
                 {COLUMN_LABELS[k]}

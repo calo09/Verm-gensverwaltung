@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { NetWorthChart } from "@/components/NetWorthChart";
+import { RefreshPricesButton } from "@/components/RefreshPricesButton";
 import { ShareBars } from "@/components/ShareBars";
+import { db } from "@/lib/db";
 import { ASSET_TYPE_LABELS } from "@/lib/assetTypes";
 import { requireUser } from "@/lib/auth";
 import { loadSummary } from "@/lib/data";
@@ -23,6 +25,11 @@ function Change({ label, now, then }: { label: string; now: number; then: number
 export default async function Dashboard() {
   const user = await requireUser();
   const s = await loadSummary(user.id);
+  const priced = await db.asset.aggregate({
+    where: { userId: user.id, autoPrice: true, archived: false },
+    _count: true,
+    _max: { priceUpdatedAt: true },
+  });
   const now = new Date();
   const today = isoDay(now);
   const monthAgo = isoDay(new Date(now.getTime() - 30 * 864e5));
@@ -58,6 +65,18 @@ export default async function Dashboard() {
           <p className="my-1 text-2xl font-semibold tabular-nums">{formatMoney(s.liabilities)}</p>
         </div>
       </section>
+
+      {priced._count > 0 && (
+        <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-muted">
+          {priced._max.priceUpdatedAt && (
+            <span>
+              Kurse zuletzt abgerufen:{" "}
+              {priced._max.priceUpdatedAt.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Berlin" })}
+            </span>
+          )}
+          <RefreshPricesButton />
+        </div>
+      )}
 
       <NetWorthChart history={s.history} today={today} />
 

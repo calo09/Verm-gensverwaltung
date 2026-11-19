@@ -4,6 +4,7 @@ import { addValuation, deleteAsset, deleteValuation, updateAsset } from "@/app/a
 import { AssetForm } from "@/components/AssetForm";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { NetWorthChart } from "@/components/NetWorthChart";
+import { RefreshPricesButton } from "@/components/RefreshPricesButton";
 import { ValuationForm } from "@/components/ValuationForm";
 import { ASSET_TYPE_LABELS, isLiability } from "@/lib/assetTypes";
 import { requireUser } from "@/lib/auth";
@@ -41,6 +42,17 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
           {formatMoney(latest ? sign * latest.value.toNumber() : 0)}
         </p>
         {latest && <p className="text-xs text-muted">Stand {formatDate(latest.date)}</p>}
+        {asset.autoPrice && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-muted">
+              {asset.quantity?.toNumber().toLocaleString("de-DE", { maximumFractionDigits: 10 })} Stück
+              {latest?.price && ` × ${formatMoney(latest.price.toNumber())}`}
+              {asset.priceSymbol && ` · ${asset.priceSymbol.replace("coingecko:", "CoinGecko: ")}`}
+            </span>
+            <RefreshPricesButton label="Kurs jetzt abrufen" />
+          </div>
+        )}
+        {asset.autoPrice && asset.priceError && <p className="mt-2 text-sm text-bad">Letzter Kursabruf fehlgeschlagen: {asset.priceError}</p>}
         <div className="mt-4 border-t border-border pt-4">
           <ValuationForm action={addValuation.bind(null, asset.id)} today={today} />
         </div>
@@ -64,6 +76,7 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
                 <td className="py-2">
                   {formatDate(v.date)}
                   {v.source === "IMPORT" && <span className="text-xs text-muted"> · Import</span>}
+                  {v.source === "API" && <span className="text-xs text-muted"> · Kurs</span>}
                 </td>
                 <td className="py-2 text-right tabular-nums">{formatMoney(v.value.toNumber())}</td>
                 <td className="py-2 text-right">
@@ -79,7 +92,16 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
 
       <section className="card">
         <h2 className="mb-4 font-semibold">Position bearbeiten</h2>
-        <AssetForm action={updateAsset.bind(null, asset.id)} initial={asset} institutions={await listInstitutions(user.id)} submitLabel="Änderungen speichern" today={today} />
+        <AssetForm action={updateAsset.bind(null, asset.id)} initial={{
+            name: asset.name,
+            type: asset.type,
+            institution: asset.institution,
+            identifier: asset.identifier,
+            note: asset.note,
+            quantity: asset.quantity?.toNumber() ?? null,
+            autoPrice: asset.autoPrice,
+          }}
+          institutions={await listInstitutions(user.id)} submitLabel="Änderungen speichern" today={today} />
         <form action={deleteAsset.bind(null, asset.id)} className="mt-6 border-t border-border pt-4">
           <ConfirmButton message="Position mit allen Werten endgültig löschen?" className="text-sm text-bad">
             Position löschen
