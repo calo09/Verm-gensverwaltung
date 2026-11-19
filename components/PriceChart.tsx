@@ -18,6 +18,7 @@ import type { History, Range } from "@/lib/prices/history";
 
 const RANGES: Range[] = ["1T", "5T", "1M", "3M", "6M", "1J", "5J", "Max"];
 const INTRADAY: Range[] = ["1T", "5T"];
+const REFRESH_MS = 60_000;
 
 const INDICATORS = {
   sma20: { label: "SMA 20", color: "#f59e0b" },
@@ -72,7 +73,20 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hover, setHover] = useState<{ o: number; h: number; l: number; c: number; time: number } | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  /** Bei einer Live-Aktualisierung den aktuellen Ausschnitt behalten statt neu einzupassen. */
+  const keepView = useRef(false);
+  const view = useRef<{ from: number; to: number } | null>(null);
+
+  async function load(signal: AbortSignal): Promise<History> {
+    const params = new URLSearchParams({ q, kind, range, ...(symbol ? { symbol } : {}) });
+    const r = await fetch(`/api/kurse?${params}`, { signal, cache: "no-store" });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.error ?? "Kurse konnten nicht geladen werden");
+    setUpdatedAt(new Date());
+    return body;
+  }
 
   // Einstellungen merken (nur in diesem Browser).
   useEffect(() => {
@@ -86,17 +100,14 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
     } catch {}
   }, [type, active]);
 
+  // Erstes Laden (mit Ladeanzeige) bei Wechsel von Wert oder Zeitraum.
   useEffect(() => {
     const ctrl = new AbortController();
+    keepView.current = false;
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({ q, kind, range, ...(symbol ? { symbol } : {}) });
-    fetch(`/api/kurse?${params}`, { signal: ctrl.signal })
-      .then(async (r) => {
-        const body = await r.json();
-        if (!r.ok) throw new Error(body.error ?? "Kurse konnten nicht geladen werden");
-        setData(body);
-      })
+    load(ctrl.signal)
+      .then((body) => setData(body))
       .catch((e) => {
         if (e.name !== "AbortError") {
           setData(null);
@@ -105,6 +116,33 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, kind, symbol, range]);
+
+  // Live: jede Minute still nachladen, solange der Tab sichtbar ist. Zoom und Ausschnitt bleiben erhalten.
+  useEffect(() => {
+    let ctrl: AbortController | null = null;
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      ctrl?.abort();
+      ctrl = new AbortController();
+      load(ctrl.signal)
+        .then((body) => {
+          keepView.current = true;
+          setData(body);
+          setError(null);
+        })
+        .catch(() => {}); // Bei einem Aussetzer bleibt der letzte Stand stehen.
+    };
+    const id = window.setInterval(tick, REFRESH_MS);
+    const onVisible = () => document.visibilityState === "visible" && tick();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      ctrl?.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, kind, symbol, range]);
 
   const stats = useMemo(() => {
@@ -176,7 +214,8 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
       chart.panes()[1]?.setHeight(Math.round(height * 0.22));
     }
 
-    chart.timeScale().fitContent();
+    if (keepView.current && view.current) chart.timeScale().setVisibleLogicalRange(view.current);
+    else chart.timeScale().fitContent();
 
     const byTime = new Map(data.candles.map((c) => [c.time, c]));
     const onMove = (p: MouseEventParams) => {
@@ -185,6 +224,8 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
     };
     chart.subscribeCrosshairMove(onMove);
     return () => {
+      const r = chart.timeScale().getVisibleLogicalRange();
+      view.current = r ? { from: r.from, to: r.to } : null;
       chart.unsubscribeCrosshairMove(onMove);
       chart.remove();
     };
@@ -260,8 +301,13 @@ export function PriceChart({ q, kind, symbol, quantity, height = 420 }: Props) {
           </div>
         )}
       </div>
-      <p className="mt-2 text-xs text-muted">
-        Kurse: {kind === "crypto" ? "CoinGecko" : "Yahoo Finance"}, ggf. verzögert. Keine Anlageberatung.
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+        <span className="inline-flex items-center gap-1">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-good" aria-hidden />
+          Live, aktualisiert sich jede Minute
+          {updatedAt && ` · Stand ${updatedAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`}
+        </span>
+        <span>· Kurse: {kind === "crypto" ? "CoinGecko" : "Yahoo Finance"}, je nach Börse bis 15 Min. verzögert. Keine Anlageberatung.</span>
       </p>
     </div>
   );

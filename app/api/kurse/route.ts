@@ -3,9 +3,10 @@ import { cryptoHistory, RANGES, securityHistory, type History, type Range } from
 import { PriceError } from "@/lib/prices/providers";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
-// Kurze Zwischenspeicherung, damit Umschalten zwischen Zeiträumen die Anbieter nicht überlastet.
+// Kurze Zwischenspeicherung, damit Umschalten und Live-Aktualisierung die Anbieter nicht überlasten.
 const cache = new Map<string, { at: number; data: History }>();
-const TTL_MS = 5 * 60 * 1000;
+// Kurze Zeiträume ändern sich laufend, lange kaum.
+const ttlMs = (range: Range) => (range === "1T" || range === "5T" ? 55_000 : range === "1M" || range === "3M" ? 2 * 60_000 : 5 * 60_000);
 
 export async function GET(req: Request) {
   if (!(await verifySession((await cookies()).get(SESSION_COOKIE)?.value))) {
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
 
   const key = `${kind}|${(symbol ?? q).toUpperCase()}|${range}`;
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL_MS) return Response.json(hit.data);
+  if (hit && Date.now() - hit.at < ttlMs(range)) return Response.json(hit.data);
 
   try {
     const data = kind === "crypto" ? await cryptoHistory(fetch, q, range, symbol) : await securityHistory(fetch, q, range, symbol);
