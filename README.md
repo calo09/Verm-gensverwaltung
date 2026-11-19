@@ -22,6 +22,10 @@ Bei Positionen der Art Depot oder Krypto kann „Kurs automatisch abrufen“ akt
 - Abruf: per Knopf „Kurse aktualisieren“ im Dashboard und werktags um 18 Uhr automatisch über `/api/cron/kurse` (Vercel Cron, geschützt durch `CRON_SECRET`).
 - Beim Depot-Import wird eine Stückzahl-Spalte übernommen; mit ISIN und Stückzahl werden Kurse danach automatisch abgerufen.
 
+### Kurscharts
+
+Unter **Kurse** und auf der Seite jeder Depot- oder Krypto-Position gibt es einen interaktiven Chart: Kerzen, Linie oder Fläche, Zeiträume von 1 Tag bis Max, Zoom und Verschieben mit Maus oder Fingern, Fadenkreuz mit Eröffnung/Hoch/Tief/Schluss sowie die Indikatoren SMA 20/50, EMA 20, Bollinger-Bänder, Volumen und RSI 14. Über die Suche lässt sich jede ISIN, jeder Ticker oder Coin anzeigen. Gezeichnet wird mit der Open-Source-Bibliothek [Lightweight Charts](https://github.com/tradingview/lightweight-charts) (Apache-2.0, das Logo unten links ist der vorgesehene Quellhinweis).
+
 Hinweis: Die Yahoo-Schnittstelle ist inoffiziell und kann sich ändern. Der Abruf ist in `lib/prices/providers.ts` gekapselt, damit sich die Quelle leicht austauschen lässt.
 
 ## CSV-Import
