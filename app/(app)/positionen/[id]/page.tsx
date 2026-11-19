@@ -9,6 +9,7 @@ import { ASSET_TYPE_LABELS, isLiability } from "@/lib/assetTypes";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDate, formatMoney, isoDay } from "@/lib/format";
+import { listInstitutions } from "@/lib/institutions";
 
 export default async function AssetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -60,7 +61,10 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
           <tbody className="divide-y divide-border">
             {asset.valuations.map((v) => (
               <tr key={v.id}>
-                <td className="py-2">{formatDate(v.date)}</td>
+                <td className="py-2">
+                  {formatDate(v.date)}
+                  {v.source === "IMPORT" && <span className="text-xs text-muted"> · Import</span>}
+                </td>
                 <td className="py-2 text-right tabular-nums">{formatMoney(v.value.toNumber())}</td>
                 <td className="py-2 text-right">
                   <form action={deleteValuation.bind(null, v.id)}>
@@ -75,7 +79,7 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
 
       <section className="card">
         <h2 className="mb-4 font-semibold">Position bearbeiten</h2>
-        <AssetForm action={updateAsset.bind(null, asset.id)} initial={asset} submitLabel="Änderungen speichern" today={today} />
+        <AssetForm action={updateAsset.bind(null, asset.id)} initial={asset} institutions={await listInstitutions(user.id)} submitLabel="Änderungen speichern" today={today} />
         <form action={deleteAsset.bind(null, asset.id)} className="mt-6 border-t border-border pt-4">
           <ConfirmButton message="Position mit allen Werten endgültig löschen?" className="text-sm text-bad">
             Position löschen

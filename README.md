@@ -9,8 +9,21 @@ Web-App, die die eigene Vermögenslage übersichtlich darstellt: Nettovermögen,
 - Werte mit Datum erfassen (ein Wert pro Tag und Position), Historie bleibt erhalten
 - Dashboard mit Kennzahlen, Verlauf (1 Jahr, 5 Jahre, alles), Aufteilung und Hinweis auf veraltete Werte
 - Export aller Werte als CSV (Excel-tauglich, Semikolon und Dezimalkomma)
+- CSV-Import mit selbst angelegten Profilen pro Bank oder Broker (siehe unten)
 
-Geplant: CSV-Import von Bank und Broker, automatische Kurse, Installation als Handy-App (PWA).
+Geplant: automatische Kurse, Installation als Handy-App (PWA).
+
+## CSV-Import
+
+Unter **Import** legst du für jede Bank oder jeden Broker einmal ein Profil an: Beispieldatei hochladen, Zeichensatz, Trennzeichen, Zahlen- und Datumsformat prüfen und die Spalten zuordnen. Die App schlägt Kopfzeile und Spalten selbst vor. Danach reicht pro Import: Profil wählen, Datei hochladen, bestätigen.
+
+| Art der Datei | Pflichtspalten | Ergebnis |
+| --- | --- | --- |
+| Kontostand je Tag | Datum, Saldo | Ein Wert pro Tag für eine Position |
+| Umsätze / Buchungen | Datum, Betrag | Mit dem aktuellen Kontostand wird der Stand an jedem Tag zurückgerechnet |
+| Depot- oder Bestandsübersicht | Bezeichnung, Wert (optional ISIN) | Alle Positionen zu einem Stichtag; Wiedererkennung über ISIN oder Name, Unbekannte werden angelegt |
+
+Ein erneuter Import desselben Zeitraums erzeugt keine Doppelungen: pro Position und Tag gibt es genau einen Wert.
 
 ## Technik
 
