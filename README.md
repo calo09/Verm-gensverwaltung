@@ -59,9 +59,10 @@ Danach unter `/registrieren` dein Konto anlegen. Wenn nur du die App nutzen soll
 
 ## Online stellen (Vercel + Neon)
 
-1. Bei [Neon](https://neon.tech) eine Postgres-Datenbank in einer EU-Region anlegen und die Verbindungs-URL kopieren.
-2. Bei [Vercel](https://vercel.com) dieses Repository importieren und die Umgebungsvariablen `DATABASE_URL`, `SESSION_SECRET`, `ALLOW_REGISTRATION` und `CRON_SECRET` setzen.
-3. Einmalig die Tabellen anlegen: lokal `DATABASE_URL=<Neon-URL> npm run db:migrate`.
+1. Bei [Vercel](https://vercel.com/signup) mit dem GitHub-Konto anmelden, **Add New → Project** wählen und dieses Repository importieren. Vor dem ersten Deploy unter **Environment Variables** setzen: `SESSION_SECRET` und `CRON_SECRET` (je ein langer Zufallswert, z. B. `openssl rand -base64 32`) und `ALLOW_REGISTRATION` = `true`.
+2. Im Projekt unter **Storage → Create Database → Neon** eine Datenbank in der Region Frankfurt anlegen und mit dem Projekt verbinden. Vercel setzt `DATABASE_URL` und `DATABASE_URL_UNPOOLED` automatisch.
+3. **Deployments → Redeploy**. Beim Build legt `npm run vercel-build` die Tabellen automatisch an (`prisma migrate deploy`).
+4. Unter der angezeigten Adresse `/registrieren` öffnen, Konto anlegen, danach `ALLOW_REGISTRATION` auf `false` setzen und erneut deployen.
 
 ## Befehle
 
