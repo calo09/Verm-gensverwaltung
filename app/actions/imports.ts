@@ -89,23 +89,37 @@ export async function runImport(profileId: string, input: RunInput): Promise<Act
         let asset =
           (h.identifier && existing.find((a) => norm(a.identifier) === norm(h.identifier))) ||
           existing.find((a) => norm(a.name) === norm(h.name) && norm(a.institution) === norm(profile.institution));
+        // Mit Kennung und Stückzahl kann der Kurs künftig automatisch abgerufen werden.
+        const priceable = Boolean(h.identifier && h.quantity !== null);
         if (!asset) {
+          const type = run.holdingsType ?? "DEPOT";
           asset = await tx.asset.create({
             data: {
               userId: user.id,
               name: h.name,
               identifier: h.identifier,
               institution: profile.institution,
-              type: run.holdingsType ?? "DEPOT",
+              type,
+              quantity: h.quantity,
+              autoPrice: priceable && (type === "DEPOT" || type === "KRYPTO"),
             },
           });
           existing.push(asset);
           created++;
+        } else if (h.quantity !== null) {
+          asset = await tx.asset.update({
+            where: { id: asset.id },
+            data: {
+              quantity: h.quantity,
+              ...(priceable && !asset.identifier ? { identifier: h.identifier } : {}),
+              ...(priceable && (asset.type === "DEPOT" || asset.type === "KRYPTO") ? { autoPrice: true } : {}),
+            },
+          });
         }
         await tx.valuation.upsert({
           where: { assetId_date: { assetId: asset.id, date: day(date) } },
-          create: { assetId: asset.id, date: day(date), value: Math.abs(h.value), source: "IMPORT" },
-          update: { value: Math.abs(h.value), source: "IMPORT" },
+          create: { assetId: asset.id, date: day(date), value: Math.abs(h.value), quantity: h.quantity, source: "IMPORT" },
+          update: { value: Math.abs(h.value), quantity: h.quantity, source: "IMPORT" },
         });
       }
       await tx.import.create({

@@ -54,7 +54,7 @@ test("HOLDINGS: Depotübersicht, Summenzeile ohne Namen wird übersprungen", () 
   const config: ImportConfig = { ...base, delimiter: ",", decimal: "dot", mode: "HOLDINGS", columns: { name: "Bezeichnung", identifier: "ISIN", amount: "Kurswert" } };
   const r = interpret(toTable(csv, config), config);
   assert.equal(r.mode, "HOLDINGS");
-  if (r.mode === "HOLDINGS") assert.deepEqual(r.holdings, [{ name: "MSCI World", identifier: "IE00B4L5Y983", value: 1234.5 }]);
+  if (r.mode === "HOLDINGS") assert.deepEqual(r.holdings, [{ name: "MSCI World", identifier: "IE00B4L5Y983", value: 1234.5, quantity: null }]);
 });
 
 test("fehlende Spalte wird gemeldet", () => {
@@ -65,7 +65,15 @@ test("fehlende Spalte wird gemeldet", () => {
 
 test("guessColumns erkennt typische Überschriften", () => {
   assert.deepEqual(guessColumns(["Buchungstag", "Valutadatum", "Betrag", "Saldo"], "BALANCE"), {
-    date: "Buchungstag", amount: "Saldo", name: undefined, identifier: undefined,
+    date: "Buchungstag", amount: "Saldo", name: undefined, identifier: undefined, quantity: undefined,
   });
   assert.equal(guessColumns(["Datum", "Betrag (EUR)"], "TRANSACTIONS").amount, "Betrag (EUR)");
+});
+
+test("HOLDINGS liest optional die Stückzahl", () => {
+  const csv = "Name;ISIN;Stück;Kurswert\nVanguard;IE00BK5BQT80;12,5;1.500,00\n";
+  const config: ImportConfig = { ...base, mode: "HOLDINGS", columns: { name: "Name", identifier: "ISIN", quantity: "Stück", amount: "Kurswert" } };
+  const r = interpret(toTable(csv, config), config);
+  if (r.mode === "HOLDINGS") assert.deepEqual(r.holdings[0], { name: "Vanguard", identifier: "IE00BK5BQT80", value: 1500, quantity: 12.5 });
+  assert.equal(guessColumns(["Name", "ISIN", "Stück", "Kurswert"], "HOLDINGS").quantity, "Stück");
 });

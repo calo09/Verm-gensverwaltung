@@ -23,6 +23,7 @@ export const importConfigSchema = z.object({
     amount: z.string().optional(),
     name: z.string().optional(),
     identifier: z.string().optional(),
+    quantity: z.string().optional(),
   }),
 });
 
@@ -46,6 +47,7 @@ export const COLUMN_LABELS: Record<keyof ImportConfig["columns"], string> = {
   amount: "Betrag / Wert",
   name: "Bezeichnung",
   identifier: "Kennung (ISIN, Ticker)",
+  quantity: "Stückzahl",
 };
 
 /** Zerlegt CSV-Text in Zeilen und Felder; versteht Anführungszeichen und Zeilenumbrüche in Feldern. */
@@ -135,7 +137,7 @@ export function toTable(text: string, config: Pick<ImportConfig, "delimiter" | "
 export type RowIssue = { row: number; message: string };
 
 export type DatedValue = { date: string; value: number };
-export type Holding = { name: string; identifier: string | null; value: number };
+export type Holding = { name: string; identifier: string | null; value: number; quantity: number | null };
 
 export type ImportResult =
   | { mode: "BALANCE" | "TRANSACTIONS"; values: DatedValue[]; issues: RowIssue[]; usedRows: number }
@@ -166,13 +168,15 @@ export function interpret(table: Table, config: ImportConfig, endBalance?: numbe
   if (config.mode === "HOLDINGS") {
     const nameIdx = col(table, config.columns.name);
     const idIdx = col(table, config.columns.identifier);
+    const qtyIdx = col(table, config.columns.quantity);
     const holdings: Holding[] = [];
     table.rows.forEach((r, i) => {
       const name = (r[nameIdx] ?? "").trim();
       const value = parseNumber(r[amountIdx] ?? "", config.decimal);
       if (!name) return; // Summenzeilen o. Ä. ohne Namen still überspringen
       if (value === null) return issues.push({ row: lineNo(i), message: `Betrag „${r[amountIdx] ?? ""}“ nicht lesbar` });
-      holdings.push({ name, identifier: idIdx >= 0 ? (r[idIdx] ?? "").trim() || null : null, value });
+      const quantity = qtyIdx >= 0 ? parseNumber(r[qtyIdx] ?? "", config.decimal) : null;
+      holdings.push({ name, identifier: idIdx >= 0 ? (r[idIdx] ?? "").trim() || null : null, value, quantity });
     });
     return { mode: "HOLDINGS", holdings, issues, usedRows: holdings.length };
   }
@@ -229,5 +233,6 @@ export function guessColumns(headers: string[], mode: ImportConfig["mode"]): Imp
           : find(/kurswert/i, /marktwert/i, /^wert/i, /value/i, /betrag/i),
     name: find(/bezeichnung/i, /^name$/i, /wertpapier/i, /instrument/i, /titel/i),
     identifier: find(/isin/i, /wkn/i, /ticker/i, /symbol/i),
+    quantity: find(/^st(ü|ue)ck/i, /anzahl/i, /^menge/i, /quantity/i, /bestand/i),
   };
 }

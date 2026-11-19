@@ -10,8 +10,19 @@ Web-App, die die eigene Vermögenslage übersichtlich darstellt: Nettovermögen,
 - Dashboard mit Kennzahlen, Verlauf (1 Jahr, 5 Jahre, alles), Aufteilung und Hinweis auf veraltete Werte
 - Export aller Werte als CSV (Excel-tauglich, Semikolon und Dezimalkomma)
 - CSV-Import mit selbst angelegten Profilen pro Bank oder Broker (siehe unten)
+- Automatische Kurse für Aktien, ETFs und Krypto (siehe unten)
 
-Geplant: automatische Kurse, Installation als Handy-App (PWA).
+Geplant: Installation als Handy-App (PWA).
+
+## Automatische Kurse
+
+Bei Positionen der Art Depot oder Krypto kann „Kurs automatisch abrufen“ aktiviert werden. Dann braucht die Position eine Kennung (ISIN oder Ticker, bei Krypto das Coin-Kürzel wie BTC) und eine Stückzahl; der Wert ist Stückzahl × aktueller Kurs in Euro.
+
+- Quellen: Yahoo Finance für Wertpapiere (bevorzugt Xetra/europäische Börsen, Fremdwährungen werden umgerechnet) und CoinGecko für Krypto. Beide sind kostenlos und ohne Konto nutzbar; für CoinGecko kann optional ein kostenloser Demo-Schlüssel in `COINGECKO_API_KEY` hinterlegt werden.
+- Abruf: per Knopf „Kurse aktualisieren“ im Dashboard und werktags um 18 Uhr automatisch über `/api/cron/kurse` (Vercel Cron, geschützt durch `CRON_SECRET`).
+- Beim Depot-Import wird eine Stückzahl-Spalte übernommen; mit ISIN und Stückzahl werden Kurse danach automatisch abgerufen.
+
+Hinweis: Die Yahoo-Schnittstelle ist inoffiziell und kann sich ändern. Der Abruf ist in `lib/prices/providers.ts` gekapselt, damit sich die Quelle leicht austauschen lässt.
 
 ## CSV-Import
 
@@ -45,7 +56,7 @@ Danach unter `/registrieren` dein Konto anlegen. Wenn nur du die App nutzen soll
 ## Online stellen (Vercel + Neon)
 
 1. Bei [Neon](https://neon.tech) eine Postgres-Datenbank in einer EU-Region anlegen und die Verbindungs-URL kopieren.
-2. Bei [Vercel](https://vercel.com) dieses Repository importieren und die Umgebungsvariablen `DATABASE_URL`, `SESSION_SECRET` und `ALLOW_REGISTRATION` setzen.
+2. Bei [Vercel](https://vercel.com) dieses Repository importieren und die Umgebungsvariablen `DATABASE_URL`, `SESSION_SECRET`, `ALLOW_REGISTRATION` und `CRON_SECRET` setzen.
 3. Einmalig die Tabellen anlegen: lokal `DATABASE_URL=<Neon-URL> npm run db:migrate`.
 
 ## Befehle
